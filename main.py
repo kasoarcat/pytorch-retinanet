@@ -32,11 +32,11 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 ##########
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-# DEPTH = 50
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+DEPTH = 50
 EPOCHS = 50
 PRETRAINED = True
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 NUM_WORKERS = 2
 LEARNING_RATE = 1e-4
 IMAGE_SIZE = (540, 960)
@@ -51,6 +51,7 @@ def main(args=None):
     parser.add_argument('--image_size', help='image size', type=int, nargs=2, default=IMAGE_SIZE)
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
+    parser.add_argument('--num_classes', help='num classes', type=int, default=3)
     parser.add_argument('--lr', help='lr', type=float, default=LEARNING_RATE)
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
@@ -63,6 +64,7 @@ def main(args=None):
     print('batch_size:', parser.batch_size)
     print('num_works:', parser.num_works)
     print('lr:', parser.lr)
+    print('num_classes:', parser.num_classes)
 
     # Create the data loaders
     if parser.dataset == 'limit':
@@ -89,8 +91,8 @@ def main(args=None):
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
                               transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]))
 
-    # 混合test
-    dataset_train += dataset_val
+    # # 混合test
+    # dataset_train += dataset_val
 
     print('training images: {}'.format(len(dataset_train)))
     print('val images: {}'.format(len(dataset_val)))
@@ -103,24 +105,18 @@ def main(args=None):
         batch_sampler=sampler)
 
     # Create the model
-    if parser.dataset == '':
-        num_classes = 3
-    else:
-        num_classes = 80
-    print('num_classes:', num_classes)
-
     if parser.depth == 18:
-        retinanet = model.resnet18(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet18(num_classes=parser.num_classes, pretrained=PRETRAINED)
     elif parser.depth == 34:
-        retinanet = model.resnet34(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet34(num_classes=parser.num_classes, pretrained=PRETRAINED)
     elif parser.depth == 50:
-        retinanet = model.resnet50(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet50(num_classes=parser.num_classes, pretrained=PRETRAINED)
     elif parser.depth == 101250:
-        retinanet = model.resnet101with50weight(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet101with50weight(num_classes=parser.num_classes, pretrained=PRETRAINED)
     elif parser.depth == 101:
-        retinanet = model.resnet101(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet101(num_classes=parser.num_classes, pretrained=PRETRAINED)
     elif parser.depth == 152:
-        retinanet = model.resnet152(num_classes=num_classes, pretrained=PRETRAINED)
+        retinanet = model.resnet152(num_classes=parser.num_classes, pretrained=PRETRAINED)
     else:
         raise ValueError('Unsupported model depth, must be one of 18, 34, 50, 101, 152')
 
