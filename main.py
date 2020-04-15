@@ -32,12 +32,11 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 ##########
-# CUDA out of memory. Tried to allocate 24.00 MiB (GPU 0; 15.90 GiB total capacity; 15.03 GiB already allocated; 13.88 MiB free; 15.17 GiB reserved in total by PyTorch)
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 101250
-EPOCHS = 40
+DEPTH = 50
+EPOCHS = 50
 PRETRAINED = True
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 NUM_WORKERS = 2
 LEARNING_RATE = 1e-4
 IMAGE_SIZE = (540, 960)
@@ -90,7 +89,9 @@ def main(args=None):
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
                               transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]))
 
-    # dataset_train += dataset_val
+    # 混合test
+    dataset_train += dataset_val
+
     print('training images: {}'.format(len(dataset_train)))
     print('val images: {}'.format(len(dataset_val)))
     
@@ -98,7 +99,7 @@ def main(args=None):
     print('steps_pre_epoch:', steps_pre_epoch)
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=parser.batch_size, drop_last=False)
-    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, collate_fn=collater,
+    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False, collate_fn=collater,
         batch_sampler=sampler)
 
     # Create the model
@@ -127,8 +128,8 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    optimizer = optim.Adam(retinanet.parameters(), lr=LEARNING_RATE)
-    # optimizer = optim.AdamW(retinanet.parameters(), lr=LEARNING_RATE)
+    # optimizer = optim.Adam(retinanet.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.AdamW(retinanet.parameters(), lr=LEARNING_RATE)
     # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=5e-4)
     # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE)
     
@@ -198,7 +199,7 @@ def main(args=None):
             epoch_loss_file.flush()
 
             print('Evaluating dataset')
-            coco_eval.evaluate_coco(dataset_val, retinanet)
+            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset)
     return parser
 
 def write_result_csv(parser):
