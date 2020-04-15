@@ -77,16 +77,16 @@ def evaluate_coco(dataset, model, _type, threshold=0.05):
         else:
             name = dataset.set_name
 
-        JSON_PATH = '{}_bbox_results.json'
+        JSON_PATH = '{}_bbox_results.json'.format(name)
         USE_KAGGLE = True if os.environ.get('KAGGLE_KERNEL_RUN_TYPE', False) else False
         if USE_KAGGLE:
             JSON_PATH = '/kaggle/working/' + JSON_PATH
-        json.dump(results, open(JSON_PATH.format(name), 'w'), indent=4)
+        json.dump(results, open(JSON_PATH, 'w'), indent=4)
 
         if _type != '':
             # load results in COCO evaluation tool
             coco_true = dataset.coco
-            coco_pred = coco_true.loadRes('{}_bbox_results.json'.format(name))
+            coco_pred = coco_true.loadRes(JSON_PATH)
 
             # run COCO evaluation
             coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
