@@ -32,11 +32,11 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 ##########
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 50
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# DEPTH = 50
 EPOCHS = 50
 PRETRAINED = True
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 NUM_WORKERS = 2
 LEARNING_RATE = 1e-4
 IMAGE_SIZE = (540, 960)
@@ -151,10 +151,16 @@ def main(args=None):
     if USE_KAGGLE:
         iteration_loss_path = '/kaggle/working/' + iteration_loss_path
         epoch_loss_path = '/kaggle/working/' + epoch_loss_path
+        
+    eval_result_path = 'eval_result.csv'
+    if USE_KAGGLE:
+        eval_result_path = '/kaggle/working/' + eval_result_path
 
-    with open (epoch_loss_path, 'a+') as epoch_loss_file, open (iteration_loss_path, 'a+') as iteration_loss_file:
+    with open (epoch_loss_path, 'a+') as epoch_loss_file, open (iteration_loss_path, 'a+') as iteration_loss_file, \
+        open (eval_result_path, 'a+') as coco_eval_file:
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
+        coco_eval_file.write('epoch_num,map50\n')
         for epoch_num in range(parser.epochs):
             retinanet.train()
             retinanet.module.freeze_bn()
@@ -199,7 +205,7 @@ def main(args=None):
             epoch_loss_file.flush()
 
             print('Evaluating dataset')
-            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset)
+            coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, parser.dataset, epoch_num)
     return parser
 
 def write_result_csv(parser):
