@@ -8,7 +8,7 @@ if platform.system() == 'Linux':
 
     def install(package):
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    install('install/pycocotools-2.0.0-cp36-cp36m-linux_x86_64.whl')
+    install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
     
 import argparse
 import collections
@@ -32,11 +32,11 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 ##########
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 50
-EPOCHS = 50
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# DEPTH = 50
+EPOCHS = 60
 PRETRAINED = True
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 NUM_WORKERS = 2
 LEARNING_RATE = 1e-4
 IMAGE_SIZE = (540, 960)
@@ -197,7 +197,7 @@ def main(args=None):
             scheduler.step(mean_epoch_loss)
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
-            
+
             print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset)
     return parser
