@@ -4,7 +4,7 @@ import json
 import torch
 from torch.utils.data import Subset
 
-def evaluate_coco(dataset, model, type, threshold=0.05):
+def evaluate_coco(dataset, model, _type, threshold=0.05):
     model.eval()
 
     with torch.no_grad():
@@ -83,7 +83,7 @@ def evaluate_coco(dataset, model, type, threshold=0.05):
             JSON_PATH = '/kaggle/working/' + JSON_PATH
         json.dump(results, open(JSON_PATH.format(name), 'w'), indent=4)
 
-        if type != '':
+        if _type != '':
             # load results in COCO evaluation tool
             coco_true = dataset.coco
             coco_pred = coco_true.loadRes('{}_bbox_results.json'.format(name))
