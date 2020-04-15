@@ -92,7 +92,7 @@ def main(args=None):
                                 # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1])
                                 )
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
-                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)])
+                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
                               limit_len=parser.limit[1]
                               )
 
