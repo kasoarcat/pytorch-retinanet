@@ -8,7 +8,7 @@ import csv
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset, Subset
 from torchvision import transforms, utils
-from torch.utils.data.sampler import Sampler
+from torch.utils.data.sampler import Sampler, RandomSampler
 
 from pycocotools.coco import COCO
 
