@@ -462,7 +462,7 @@ class UnNormalizer(object):
             t.mul_(s).add_(m)
         return tensor
 
-class AspectRatioBasedSampler(Sampler):
+class AspectRatioBasedSampler(RandomSampler):
     def __init__(self, data_sources, batch_size, drop_last):
         self.data_sources = data_sources
         self.batch_size = batch_size
