@@ -69,20 +69,10 @@ def main(args=None):
     print('limit:', parser.limit)
 
     # Create the data loaders
-    if parser.dataset == 'limit':
-        print('using limit dataset')
-        dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
-                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
-                                # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1]),
-                                limit_len=parser.limit[0]
-        )
-        dataset_val = CocoDataset(parser.coco_path, set_name='test',
-                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
-                              limit_len=parser.limit[1]
-        )
-        # dataset_train, _ = torch.utils.data.random_split(dataset_train, [NUM_COCO_DATASET_TRAIN, len(dataset_train) - NUM_COCO_DATASET_TRAIN])
-        # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
-    elif parser.dataset == 'h5':
+    # dataset_train, _ = torch.utils.data.random_split(dataset_train, [NUM_COCO_DATASET_TRAIN, len(dataset_train) - NUM_COCO_DATASET_TRAIN])
+    # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
+
+    if parser.dataset == 'h5':
         print('using h5 dataset')
         dataset_train = H5CoCoDataset('{}/train_small.hdf5'.format(parser.coco_path), 'train_small')
         dataset_val = H5CoCoDataset('{}/test.hdf5'.format(parser.coco_path), 'test')
@@ -208,7 +198,7 @@ def main(args=None):
             epoch_loss_file.flush()
 
             print('Evaluating dataset')
-            coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, parser.dataset, epoch_num)
+            coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, epoch_num)
     return parser
 
 def write_result_csv(parser):
