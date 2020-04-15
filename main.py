@@ -46,7 +46,7 @@ FACTOR = 0.1
 
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-    parser.add_argument('--dataset', help='Dataset type, must be one of csv or coco.', default='')
+    parser.add_argument('--dataset', help='Dataset type, must be one of csv or coco.', default='show')
     parser.add_argument('--coco_path', help='Path to COCO directory', default='/mnt/marathon')
     parser.add_argument('--image_size', help='image size', type=int, nargs=2, default=IMAGE_SIZE)
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)

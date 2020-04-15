@@ -83,7 +83,7 @@ def evaluate_coco(dataset, model, coco_eval_file, _type, epoch_num, threshold=0.
             JSON_PATH = '/kaggle/working/' + JSON_PATH
         json.dump(results, open(JSON_PATH, 'w'), indent=4)
 
-        if _type != '':
+        if _type != 'show':
             # load results in COCO evaluation tool
             coco_true = dataset.coco
             coco_pred = coco_true.loadRes(JSON_PATH)
