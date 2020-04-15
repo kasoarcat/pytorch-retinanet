@@ -8,7 +8,7 @@ if platform.system() == 'Linux':
 
     def install(package):
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
+    # install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
     
 import argparse
 import collections
@@ -21,7 +21,7 @@ import torchvision
 from torchvision import transforms
 
 from retinanet import model
-from retinanet.dataloader import H5CoCoDataset, CocoDataset, CSVDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, Normalizer
+from retinanet.dataloader import H5CoCoDataset, CocoDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, Normalizer
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 
 from retinanet import coco_eval
@@ -32,11 +32,11 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 ##########
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-# DEPTH = 50
-EPOCHS = 60
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+DEPTH = 50
+EPOCHS = 50
 PRETRAINED = True
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 NUM_WORKERS = 2
 LEARNING_RATE = 1e-4
 IMAGE_SIZE = (540, 960)
@@ -99,7 +99,7 @@ def main(args=None):
     print('steps_pre_epoch:', steps_pre_epoch)
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=parser.batch_size, drop_last=False)
-    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False, collate_fn=collater,
+    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=True, collate_fn=collater,
         batch_sampler=sampler)
 
     # Create the model
