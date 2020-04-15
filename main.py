@@ -49,6 +49,7 @@ def main(args=None):
     parser.add_argument('--dataset', help='Dataset type, must be one of csv or coco.', default='show')
     parser.add_argument('--coco_path', help='Path to COCO directory', default='/mnt/marathon')
     parser.add_argument('--image_size', help='image size', type=int, nargs=2, default=IMAGE_SIZE)
+    parser.add_argument('--limit', help='limit', type=int, nargs=2, default=(0, 0))
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
@@ -65,6 +66,7 @@ def main(args=None):
     print('num_works:', parser.num_works)
     print('lr:', parser.lr)
     print('num_classes:', parser.num_classes)
+    print('limit:', parser.limit)
 
     # Create the data loaders
     if parser.dataset == 'limit':
@@ -72,10 +74,10 @@ def main(args=None):
         dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
                                 transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
                                 # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1]),
-                                limit_len=2000)
+                                limit_len=parser.limit[0])
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
                               transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
-                              limit_len=200)
+                              limit_len=parser.limit[1])
         # dataset_train, _ = torch.utils.data.random_split(dataset_train, [NUM_COCO_DATASET_TRAIN, len(dataset_train) - NUM_COCO_DATASET_TRAIN])
         # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
     elif parser.dataset == 'h5':
@@ -85,11 +87,14 @@ def main(args=None):
     else:
         print('using all dataset')
         dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
-                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)])
+                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
+                                limit_len=parser.limit[0]
                                 # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1])
                                 )
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
-                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]))
+                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)])
+                              limit_len=parser.limit[1]
+                              )
 
     # # 混合test
     # dataset_train += dataset_val
