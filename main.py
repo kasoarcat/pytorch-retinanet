@@ -74,10 +74,12 @@ def main(args=None):
         dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
                                 transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
                                 # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1]),
-                                limit_len=parser.limit[0])
+                                limit_len=parser.limit[0]
+        )
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
                               transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
-                              limit_len=parser.limit[1])
+                              limit_len=parser.limit[1]
+        )
         # dataset_train, _ = torch.utils.data.random_split(dataset_train, [NUM_COCO_DATASET_TRAIN, len(dataset_train) - NUM_COCO_DATASET_TRAIN])
         # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
     elif parser.dataset == 'h5':
@@ -90,11 +92,11 @@ def main(args=None):
                                 transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
                                 limit_len=parser.limit[0]
                                 # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1])
-                                )
+        )
         dataset_val = CocoDataset(parser.coco_path, set_name='test',
                               transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
                               limit_len=parser.limit[1]
-                              )
+        )
 
     # # 混合test
     # dataset_train += dataset_val
