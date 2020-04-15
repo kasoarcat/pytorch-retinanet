@@ -197,7 +197,7 @@ def main(args=None):
             scheduler.step(mean_epoch_loss)
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
-
+            
             print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset)
     return parser
