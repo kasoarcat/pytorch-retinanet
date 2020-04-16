@@ -151,14 +151,6 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
-    optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now)
-    
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
-    loss_hist = collections.deque(maxlen=500)
-
     lr_now = 0
     if parser.lr <= 0:
         lr_now = lr_change(epoch_num+1, parser.lr, parser.lr_map)
@@ -166,6 +158,14 @@ def main(args=None):
     else:
         lr_now = parser.lr
     print('now lr:', lr_now)
+
+    # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
+    optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now)
+    
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
+    loss_hist = collections.deque(maxlen=500)
 
     retinanet.train()
     retinanet.module.freeze_bn()
@@ -241,8 +241,7 @@ def main(args=None):
                 adjust_learning_rate(optimizer, lr_now)
             else:
                 scheduler.step(mean_epoch_loss)
-            print('now lr:', lr_now)
-            
+
             # print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, coco_eval_file, epoch_num)
     return parser
