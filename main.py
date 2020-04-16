@@ -40,7 +40,7 @@ EPOCHS = 20
 PRETRAINED = True
 BATCH_SIZE = 8
 NUM_WORKERS = 2
-LEARNING_RATE = 1e-4
+LR = 2e-4
 IMAGE_SIZE = (540, 960)
 PATIENCE = 3
 FACTOR = 0.1
@@ -52,6 +52,13 @@ def adjust_learning_rate(optimizer, lr):
         param_group['lr'] = lr
 
 
+def lr_change(epoch, lr):
+    for k in parser.lr_map.keys():
+        if epoch >= k:
+            lr = parser.lr_map[k]
+    return lr
+
+
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
     parser.add_argument('--dataset', help='Dataset type, must be one of csv or coco.', default='show')
@@ -61,7 +68,8 @@ def main(args=None):
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
-    parser.add_argument('--lr', help='lr', type=float, default=LEARNING_RATE)
+    parser.add_argument('--lr', help='lr', type=float, default=LR)
+    parser.add_argument('--lr_map', help='lr_map', type=json.loads, default={25:15e-5, 30:7.5e-5, 35:3e-5})
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
     parser = parser.parse_args(args)
@@ -129,10 +137,10 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    # optimizer = optim.Adam(retinanet.parameters(), lr=LEARNING_RATE)
-    optimizer = optim.AdamW(retinanet.parameters(), lr=LEARNING_RATE)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=5e-4)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE)
+    # optimizer = optim.Adam(retinanet.parameters(), lr=LR)
+    optimizer = optim.AdamW(retinanet.parameters(), lr=LR)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=LR)
     
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
     loss_hist = collections.deque(maxlen=500)
@@ -162,15 +170,10 @@ def main(args=None):
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
         coco_eval_file.write('epoch_num,map50\n')
-        
+
         for epoch_num in range(parser.epochs):
-            if epoch > 25:
-                lr = 15e-5
-            if epoch > 30:
-                lr = 7.5e-5
-            if epoch > 35:
-                lr = 3e-5
-            adjust_learning_rate(optimizer, lr)
+            parser.lr = lr_change(epoch_num+1, parser.lr)
+            adjust_learning_rate(optimizer, parser.lr)
 
             retinanet.train()
             retinanet.module.freeze_bn()
