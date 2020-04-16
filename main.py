@@ -53,6 +53,7 @@ def adjust_learning_rate(optimizer, lr):
 
 
 def lr_change(epoch, lr, lr_map):
+    new_lr = lr
     for k in lr_map.keys():
         if epoch >= int(k):
             new_lr = lr_map[k]
