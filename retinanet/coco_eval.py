@@ -83,12 +83,12 @@ def evaluate_coco(dataset, model, _type, coco_eval_file, epoch_num, threshold=0.
             JSON_PATH = '/kaggle/working/' + JSON_PATH
         json.dump(results, open(JSON_PATH, 'w'), indent=4)
 
-        # load results in COCO evaluation tool
-        coco_true = dataset.coco
-        coco_pred = coco_true.loadRes(JSON_PATH)
+        if _type != 'show':
+            # load results in COCO evaluation tool
+            coco_true = dataset.coco
+            coco_pred = coco_true.loadRes(JSON_PATH)
 
-        # run COCO evaluation
-        if _type != 'show':        
+            # run COCO evaluation
             coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
             coco_eval.params.imgIds = image_ids
             coco_eval.evaluate()

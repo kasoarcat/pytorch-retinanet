@@ -37,7 +37,7 @@ assert torch.__version__.split('.')[0] == '1'
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 DEPTH = 50
 EPOCHS = 40
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 NUM_WORKERS = 2
 LR = 2e-4
 IMAGE_SIZE = (540, 960)
