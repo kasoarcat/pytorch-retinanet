@@ -156,7 +156,6 @@ def main(args=None):
     if parser.lr <= 0:
         print('using lr map')
         lr_now = lr_change(1, lr_now, parser.lr_map)
-        adjust_learning_rate(optimizer, lr_now)
     else:
         print('using lr scheduler')
         lr_now = parser.lr
@@ -167,6 +166,9 @@ def main(args=None):
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now)
     
+    if parser.lr <= 0:
+        adjust_learning_rate(optimizer, lr_now)
+
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
     loss_hist = collections.deque(maxlen=500)
 
