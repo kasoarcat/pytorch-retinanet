@@ -84,7 +84,7 @@ def main(args=None):
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
-    parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default={"25":15e-5, "30":7.5e-5, "35":3e-5})
+    parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default={"25":"15e-5", "30":"7.5e-5", "35":"3e-5"})
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
     parser = parser.parse_args(args)
