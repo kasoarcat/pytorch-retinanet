@@ -20,6 +20,7 @@ import skimage
 from PIL import Image
 import h5py
 
+
 class H5CoCoDataset(torch.utils.data.Dataset):
     def __init__(self, path, set_name):
         self.path = path
@@ -60,6 +61,7 @@ class H5CoCoDataset(torch.utils.data.Dataset):
 
     def label_to_coco_label(self, label):
         return int(self.coco_labels[label])
+
 
 class CocoDataset(Dataset):
     def __init__(self, root_dir, set_name='train2017', transform=None, limit_len=0):
@@ -165,6 +167,7 @@ class CocoDataset(Dataset):
     def image_aspect_ratio(self, image_index):
         image = self.coco.loadImgs(self.image_ids[image_index])[0]
         return float(image['width']) / float(image['height'])
+
 
 class CSVDataset(Dataset):
     """CSV dataset."""
@@ -375,6 +378,7 @@ def collater(data):
     padded_imgs = padded_imgs.permute(0, 3, 1, 2)
     return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}
 
+
 class Resizer(object):
     def __init__(self, min_side, max_side):
         self.min_side = min_side
@@ -410,6 +414,7 @@ class Resizer(object):
 
         return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale}
 
+
 class Augmenter(object):
     """Convert ndarrays in sample to Tensors."""
     def __call__(self, sample, flip_x=0.5):
@@ -431,6 +436,7 @@ class Augmenter(object):
 
         return sample
 
+
 class Normalizer(object):
     def __init__(self):
         self.mean = np.array([[[0.485, 0.456, 0.406]]])
@@ -439,6 +445,7 @@ class Normalizer(object):
     def __call__(self, sample):
         image, annots = sample['img'], sample['annot']
         return {'img':((image.astype(np.float32)-self.mean)/self.std), 'annot': annots}
+
 
 class UnNormalizer(object):
     def __init__(self, mean=None, std=None):
@@ -461,6 +468,7 @@ class UnNormalizer(object):
         for t, m, s in zip(tensor, self.mean, self.std):
             t.mul_(s).add_(m)
         return tensor
+
 
 class AspectRatioBasedSampler(RandomSampler):
     def __init__(self, data_sources, batch_size, drop_last):

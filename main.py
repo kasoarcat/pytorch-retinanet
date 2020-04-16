@@ -52,10 +52,10 @@ def adjust_learning_rate(optimizer, lr):
         param_group['lr'] = lr
 
 
-def lr_change(epoch, lr):
-    for k in parser.lr_map.keys():
+def lr_change(epoch, lr, lr_map):
+    for k in lr_map.keys():
         if epoch >= int(k):
-            lr = parser.lr_map[k]
+            lr = lr_map[k]
     return lr
 
 
@@ -172,7 +172,7 @@ def main(args=None):
         coco_eval_file.write('epoch_num,map50\n')
 
         for epoch_num in range(parser.epochs):
-            parser.lr = lr_change(epoch_num+1, parser.lr)
+            parser.lr = lr_change(epoch_num+1, parser.lr, parser.lr_map)
             adjust_learning_rate(optimizer, parser.lr)
 
             retinanet.train()
