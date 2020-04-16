@@ -55,8 +55,12 @@ def adjust_learning_rate(optimizer, lr):
 def lr_change(epoch, lr, lr_map):
     for k in lr_map.keys():
         if epoch >= int(k):
-            lr = lr_map[k]
-    return lr
+            new_lr = lr_map[k]
+
+    if new_lr != lr:
+        print('change lr form {} to {}'.format(lr, new_lr))
+    
+    return new_lr
 
 
 def main(args=None):
