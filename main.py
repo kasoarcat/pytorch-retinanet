@@ -10,6 +10,7 @@ if platform.system() == 'Linux':
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
     
+
 import argparse
 import collections
 import platform
@@ -31,10 +32,11 @@ from io import StringIO
 
 assert torch.__version__.split('.')[0] == '1'
 
+
 ##########
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 DEPTH = 50
-EPOCHS = 50
+EPOCHS = 20
 PRETRAINED = True
 BATCH_SIZE = 8
 NUM_WORKERS = 2
@@ -43,6 +45,12 @@ IMAGE_SIZE = (540, 960)
 PATIENCE = 3
 FACTOR = 0.1
 ##########
+
+
+def adjust_learning_rate(optimizer, lr):
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
 
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
@@ -126,7 +134,7 @@ def main(args=None):
     # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE, momentum=0.9, weight_decay=5e-4)
     # optimizer = optim.SGD(retinanet.parameters(), lr=LEARNING_RATE)
     
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
     loss_hist = collections.deque(maxlen=500)
 
     retinanet.train()
@@ -154,7 +162,16 @@ def main(args=None):
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
         coco_eval_file.write('epoch_num,map50\n')
+        
         for epoch_num in range(parser.epochs):
+            if epoch > 25:
+                lr = 15e-5
+            if epoch > 30:
+                lr = 7.5e-5
+            if epoch > 35:
+                lr = 3e-5
+            adjust_learning_rate(optimizer, lr)
+
             retinanet.train()
             retinanet.module.freeze_bn()
 
@@ -193,13 +210,14 @@ def main(args=None):
                     continue
 
             mean_epoch_loss = np.mean(epoch_loss)
-            scheduler.step(mean_epoch_loss)
+            # scheduler.step(mean_epoch_loss)
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
             print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, epoch_num)
     return parser
+
 
 def write_result_csv(parser):
     test_file = '{}/test/test.json'.format(parser.coco_path)
@@ -224,6 +242,7 @@ def write_result_csv(parser):
             x,y,w,h = anno['bbox']
             f_out.write(",{},{},{},{},{},{:.02f}".format(anno['category_id'], x,y,w,h, anno['score']))
             f_out.write('\n')
+
 
 if __name__ == '__main__':
     print('CUDA available: {}'.format(torch.cuda.is_available()))
