@@ -39,6 +39,7 @@ DEPTH = 50
 EPOCHS = 40
 BATCH_SIZE = 8
 NUM_WORKERS = 2
+# LR = 0
 LR = 1e-4
 LR_MAP = {"1":"2e-4", "25":"15e-5", "30":"7.5e-5", "35":"3e-5"}
 IMAGE_SIZE = (540, 960)
@@ -153,9 +154,11 @@ def main(args=None):
 
     lr_now = 0
     if parser.lr <= 0:
-        lr_now = lr_change(epoch_num+1, parser.lr, parser.lr_map)
+        print('using lr map')
+        lr_now = lr_change(1, lr_now, parser.lr_map)
         adjust_learning_rate(optimizer, lr_now)
     else:
+        print('using lr scheduler')
         lr_now = parser.lr
     print('now lr:', lr_now)
 
