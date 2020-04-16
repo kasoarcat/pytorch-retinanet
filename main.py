@@ -49,7 +49,6 @@ FACTOR = 0.1
 
 class StoreDictKeyPair(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        print('__call__')
         my_dict = {}
         for kv in values.split(","):
             k,v = kv.split("=")
@@ -66,7 +65,7 @@ def lr_change(epoch, lr, lr_map):
     new_lr = lr
     for k in lr_map.keys():
         if epoch >= int(k):
-            new_lr = int(lr_map[k])
+            new_lr = float(lr_map[k])
 
     if new_lr != lr:
         print('changing lr form {} to {}'.format(lr, new_lr))
