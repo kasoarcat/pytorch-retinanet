@@ -36,9 +36,9 @@ assert torch.__version__.split('.')[0] == '1'
 ##########
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 DEPTH = 50
-EPOCHS = 20
+EPOCHS = 40
 PRETRAINED = True
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 NUM_WORKERS = 2
 LR = 2e-4
 IMAGE_SIZE = (540, 960)
@@ -47,15 +47,25 @@ FACTOR = 0.1
 ##########
 
 
+class StoreDictKeyPair(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        my_dict = {}
+        for kv in values.split(","):
+            k,v = kv.split("=")
+            my_dict[k] = v
+        setattr(namespace, self.dest, my_dict)
+
+
 def adjust_learning_rate(optimizer, lr):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
 
 def lr_change(epoch, lr, lr_map):
+    new_lr = lr
     for k in lr_map.keys():
         if epoch >= int(k):
-            new_lr = lr_map[k]
+            new_lr = float(lr_map[k])
 
     if new_lr != lr:
         print('changing lr form {} to {}'.format(lr, new_lr))
@@ -73,7 +83,7 @@ def main(args=None):
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
-    parser.add_argument('--lr_map', help='lr_map', type=json.loads, default='{"25":15e-5, "30":7.5e-5, "35":3e-5}')
+    parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default={"25":"15e-5", "30":"7.5e-5", "35":"3e-5"})
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
     parser = parser.parse_args(args)
@@ -221,7 +231,7 @@ def main(args=None):
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
-            print('Evaluating dataset')
+            # print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, epoch_num)
     return parser
 
