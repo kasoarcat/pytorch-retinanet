@@ -58,7 +58,7 @@ def lr_change(epoch, lr, lr_map):
             new_lr = lr_map[k]
 
     if new_lr != lr:
-        print('change lr form {} to {}'.format(lr, new_lr))
+        print('changing lr form {} to {}'.format(lr, new_lr))
     
     return new_lr
 
