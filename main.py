@@ -39,7 +39,8 @@ DEPTH = 50
 EPOCHS = 40
 BATCH_SIZE = 8
 NUM_WORKERS = 2
-LR = 2e-4
+LR = 1e-4
+LR_MAP = {"1":"2e-4", "25":"15e-5", "30":"7.5e-5", "35":"3e-5"}
 IMAGE_SIZE = (540, 960)
 PATIENCE = 3
 FACTOR = 0.1
@@ -83,7 +84,7 @@ def main(args=None):
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
-    parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default={"25":"15e-5", "30":"7.5e-5", "35":"3e-5"})
+    parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
     parser = parser.parse_args(args)
@@ -150,13 +151,19 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    # optimizer = optim.Adam(retinanet.parameters(), lr=LR)
-    optimizer = optim.AdamW(retinanet.parameters(), lr=LR)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
-    # optimizer = optim.SGD(retinanet.parameters(), lr=LR)
+    # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
+    optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
+    # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now)
     
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
     loss_hist = collections.deque(maxlen=500)
+
+    if parser.lr <= 0:
+        lr_now = lr_change(epoch_num+1, parser.lr, parser.lr_map)
+        adjust_learning_rate(optimizer, lr_now)
+    else:
+        lr_now = parser.lr
 
     retinanet.train()
     retinanet.module.freeze_bn()
@@ -186,9 +193,6 @@ def main(args=None):
         coco_eval_file.write('epoch_num,map50\n')
 
         for epoch_num in range(parser.epochs):
-            parser.lr = lr_change(epoch_num+1, parser.lr, parser.lr_map)
-            adjust_learning_rate(optimizer, parser.lr)
-
             retinanet.train()
             retinanet.module.freeze_bn()
 
@@ -227,10 +231,15 @@ def main(args=None):
                     continue
 
             mean_epoch_loss = np.mean(epoch_loss)
-            # scheduler.step(mean_epoch_loss)
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
+            if parser.lr <= 0:
+                lr_now = lr_change(epoch_num+1, lr_now, parser.lr_map)
+                adjust_learning_rate(optimizer, lr_now)
+            else:
+                scheduler.step(mean_epoch_loss)
+            
             # print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, coco_eval_file, epoch_num)
     return parser
