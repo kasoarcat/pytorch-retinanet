@@ -34,11 +34,11 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ##########
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 50
-EPOCHS = 20
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# DEPTH = 50
+EPOCHS = 40
 PRETRAINED = True
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 NUM_WORKERS = 2
 LR = 2e-4
 IMAGE_SIZE = (540, 960)
@@ -126,7 +126,7 @@ def main(args=None):
     
     steps_pre_epoch = len(dataset_train) // parser.batch_size
     print('steps_pre_epoch:', steps_pre_epoch)
-    
+
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=parser.batch_size, drop_last=False)
     dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False, collate_fn=collater,
         batch_sampler=sampler)
