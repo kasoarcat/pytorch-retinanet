@@ -126,7 +126,7 @@ def main(args=None):
     
     steps_pre_epoch = len(dataset_train) // parser.batch_size
     print('steps_pre_epoch:', steps_pre_epoch)
-
+    
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=parser.batch_size, drop_last=False)
     dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False, collate_fn=collater,
         batch_sampler=sampler)
