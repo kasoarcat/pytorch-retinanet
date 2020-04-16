@@ -37,7 +37,7 @@ assert torch.__version__.split('.')[0] == '1'
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 DEPTH = 50
 EPOCHS = 40
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 NUM_WORKERS = 2
 # LR = 0
 LR = 1e-4
@@ -154,12 +154,9 @@ def main(args=None):
 
     lr_now = 0
     if parser.lr <= 0:
-        print('using lr map')
         lr_now = lr_change(1, lr_now, parser.lr_map)
     else:
-        print('using lr scheduler')
         lr_now = parser.lr
-    print('now lr:', lr_now)
 
     # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
     optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
@@ -247,7 +244,7 @@ def main(args=None):
             else:
                 scheduler.step(mean_epoch_loss)
 
-            # print('Evaluating dataset')
+            print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, coco_eval_file, epoch_num)
     return parser
 
