@@ -178,6 +178,7 @@ def main(args=None):
     if USE_KAGGLE:
         eval_result_path = '/kaggle/working/' + eval_result_path
 
+    print()
     with open (epoch_loss_path, 'a+') as epoch_loss_file, open (iteration_loss_path, 'a+') as iteration_loss_file, \
         open (eval_result_path, 'a+') as coco_eval_file:
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
