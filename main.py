@@ -34,8 +34,8 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ##########
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-# DEPTH = 50
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+DEPTH = 50
 EPOCHS = 40
 PRETRAINED = True
 BATCH_SIZE = 4
@@ -231,7 +231,7 @@ def main(args=None):
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
-            print('Evaluating dataset')
+            # print('Evaluating dataset')
             coco_eval.evaluate_coco(dataset_val, retinanet, coco_eval_file, epoch_num)
     return parser
 
