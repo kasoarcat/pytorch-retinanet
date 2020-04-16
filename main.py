@@ -103,11 +103,9 @@ def main(args=None):
     # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
 
     if parser.dataset == 'h5':
-        print('using h5 dataset')
         dataset_train = H5CoCoDataset('{}/train_small.hdf5'.format(parser.coco_path), 'train_small')
         dataset_val = H5CoCoDataset('{}/test.hdf5'.format(parser.coco_path), 'test')
     else:
-        print('using all dataset')
         dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
                                 transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
                                 limit_len=parser.limit[0]
