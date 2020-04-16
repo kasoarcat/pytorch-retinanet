@@ -66,7 +66,7 @@ def lr_change(epoch, lr, lr_map):
     new_lr = lr
     for k in lr_map.keys():
         if epoch >= int(k):
-            new_lr = lr_map[k]
+            new_lr = int(lr_map[k])
 
     if new_lr != lr:
         print('changing lr form {} to {}'.format(lr, new_lr))
