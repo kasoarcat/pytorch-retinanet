@@ -4,7 +4,7 @@ import json
 import torch
 from torch.utils.data import Subset
 
-def evaluate_coco(dataset, model, coco_eval_file, epoch_num, threshold=0.05):
+def evaluate_coco(dataset, model, _type, coco_eval_file, epoch_num, threshold=0.05):
     model.eval()
 
     with torch.no_grad():
@@ -88,10 +88,11 @@ def evaluate_coco(dataset, model, coco_eval_file, epoch_num, threshold=0.05):
         coco_pred = coco_true.loadRes(JSON_PATH)
 
         # run COCO evaluation
-        coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
-        coco_eval.params.imgIds = image_ids
-        coco_eval.evaluate()
-        coco_eval.accumulate()
-        coco_eval.summarize()
-        model.train()
-        coco_eval_file.write('{},{:1.2f}\n'.format(epoch_num+1, coco_eval.stats))
+        if _type != 'show':        
+            coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
+            coco_eval.params.imgIds = image_ids
+            coco_eval.evaluate()
+            coco_eval.accumulate()
+            coco_eval.summarize()
+            model.train()
+            coco_eval_file.write('{},{:1.2f}\n'.format(epoch_num+1, coco_eval.stats))
