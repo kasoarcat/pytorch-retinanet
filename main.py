@@ -176,7 +176,7 @@ def main(args=None):
 
     if parser.lr_choice == 'lr_map':
         lr_now = lr_change_map(1, 0, parser.lr_map)
-    elif lparser.r_choice == 'lr_fn':
+    elif parser.lr_choice == 'lr_fn':
         lr_now = LR_START
     elif parser.lr_choice == 'lr_scheduler':
         lr_now = parser.lr
