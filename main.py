@@ -34,15 +34,15 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ##########
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-# DEPTH = 50
-EPOCHS = 40
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+DEPTH = 50
+EPOCHS = 20
 BATCH_SIZE = 4
 NUM_WORKERS = 2
 IMAGE_SIZE = (540, 960)
 PRETRAINED = True
 
-# LR_CHOICE = 'lr_scheduler'
+LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
 PATIENCE = 3
 FACTOR = 0.1
@@ -50,7 +50,7 @@ FACTOR = 0.1
 # LR_CHOICE = 'lr_map'
 LR_MAP = {"1":"2e-4", "25":"15e-5", "30":"7.5e-5", "35":"3e-5"}
 
-LR_CHOICE = 'lr_fn'
+# LR_CHOICE = 'lr_fn'
 LR_START = 1e-5
 LR_MAX = 1e-4
 LR_MIN = 1e-5
