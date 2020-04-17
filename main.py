@@ -106,6 +106,7 @@ def main(args=None):
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
+    parser.add_argument('--merge_val', help='merge_val', type=int, default=0)
     parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr_scheduler', 'lr_map', 'lr_fn'], type=str)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
@@ -119,6 +120,7 @@ def main(args=None):
     print('image_size:', parser.image_size)
     print('batch_size:', parser.batch_size)
     print('num_works:', parser.num_works)
+    print('merge_val:', parser.merge_val)
     print('lr_choice:', parser.lr_choice)
     print('lr:', parser.lr)
     print('lr_map:', parser.lr_map)
@@ -143,8 +145,9 @@ def main(args=None):
                               limit_len=parser.limit[1]
         )
 
-    # 混合test
-    # dataset_train += dataset_val
+    # 混合val
+    if parser.merge_val:
+        dataset_train += dataset_val
 
     print('training images: {}'.format(len(dataset_train)))
     print('val images: {}'.format(len(dataset_val)))
