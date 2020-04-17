@@ -34,16 +34,16 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ####################
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 50
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# DEPTH = 50
 
-EPOCHS = 20
+EPOCHS = 40
 BATCH_SIZE = 4
 NUM_WORKERS = 2
 IMAGE_SIZE = (540, 960)
 PRETRAINED = True
 
-LR_CHOICE = 'lr_scheduler'
+# LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
 PATIENCE = 3
 FACTOR = 0.1
@@ -51,7 +51,7 @@ FACTOR = 0.1
 # LR_CHOICE = 'lr_map'
 LR_MAP = {"1":"2e-4", "25":"1.5e-4", "30":"7.5e-5", "35":"3e-5"}
 
-# LR_CHOICE = 'lr_fn'
+LR_CHOICE = 'lr_fn'
 LR_START = 1e-5
 LR_MAX = 1e-4
 LR_MIN = 1e-5
@@ -197,23 +197,24 @@ def main(args=None):
     retinanet.train()
     retinanet.module.freeze_bn()
 
-    iteration_loss_path = "iteration_loss.csv"
+    iteration_loss_path = 'iteration_loss.csv'
     if os.path.isfile(iteration_loss_path):
         os.remove(iteration_loss_path)
     
-    epoch_loss_path = "epoch_loss.csv"
+    epoch_loss_path = 'epoch_loss.csv'
     if os.path.isfile(epoch_loss_path):
         os.remove(epoch_loss_path)
     
+    eval_result_path = 'eval_result.csv'
+    if os.path.isfile(eval_result_path):
+        os.remove(eval_result_path)
+
     USE_KAGGLE = True if os.environ.get('KAGGLE_KERNEL_RUN_TYPE', False) else False
     if USE_KAGGLE:
         iteration_loss_path = '/kaggle/working/' + iteration_loss_path
         epoch_loss_path = '/kaggle/working/' + epoch_loss_path
-        
-    eval_result_path = 'eval_result.csv'
-    if USE_KAGGLE:
         eval_result_path = '/kaggle/working/' + eval_result_path
-
+    
     print()
     with open (epoch_loss_path, 'a+') as epoch_loss_file, open (iteration_loss_path, 'a+') as iteration_loss_file, \
         open (eval_result_path, 'a+') as coco_eval_file:
