@@ -34,18 +34,29 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ##########
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-DEPTH = 50
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# DEPTH = 50
 EPOCHS = 40
 BATCH_SIZE = 4
 NUM_WORKERS = 2
-# LR = 0
-LR = 1e-4
-LR_MAP = {"1":"2e-4", "25":"15e-5", "30":"7.5e-5", "35":"3e-5"}
 IMAGE_SIZE = (540, 960)
+PRETRAINED = True
+
+# LR_CHOICE = 'lr'
+LR = 1e-4
 PATIENCE = 3
 FACTOR = 0.1
-PRETRAINED = True
+
+# LR_CHOICE = 'lr_map'
+LR_MAP = {"1":"2e-4", "25":"15e-5", "30":"7.5e-5", "35":"3e-5"}
+
+LR_CHOICE = 'lr_fn'
+LR_START = 1e-5
+LR_MAX = 1e-4
+LR_MIN = 1e-5
+LR_RAMPUP_EPOCHS = 5
+LR_SUSTAIN_EPOCHS = 10
+LR_EXP_DECAY = .8
 ##########
 
 
@@ -63,7 +74,7 @@ def adjust_learning_rate(optimizer, lr):
         param_group['lr'] = lr
 
 
-def lr_change(epoch, lr, lr_map):
+def lr_change_map(epoch, lr, lr_map):
     new_lr = lr
     for k in lr_map.keys():
         if epoch >= int(k):
@@ -75,6 +86,16 @@ def lr_change(epoch, lr, lr_map):
     return new_lr
 
 
+def lrfn(epoch):
+    if epoch < LR_RAMPUP_EPOCHS:
+        lr = (LR_MAX - LR_START) / LR_RAMPUP_EPOCHS * epoch + LR_START
+    elif epoch < LR_RAMPUP_EPOCHS + LR_SUSTAIN_EPOCHS:
+        lr = LR_MAX
+    else:
+        lr = (LR_MAX - LR_MIN) * LR_EXP_DECAY**(epoch - LR_RAMPUP_EPOCHS - LR_SUSTAIN_EPOCHS) + LR_MIN
+    return lr
+
+
 def main(args=None):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
     parser.add_argument('--dataset', help='Dataset type, must be one of csv or coco.', default='show')
@@ -84,6 +105,7 @@ def main(args=None):
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
+    parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr', 'lr_map', 'lr_fn'], type=str, help='lr', 'lr_map', 'lr_fn')
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
@@ -119,8 +141,8 @@ def main(args=None):
                               limit_len=parser.limit[1]
         )
 
-    # # 混合test
-    # dataset_train += dataset_val
+    # 混合test
+    dataset_train += dataset_val
 
     print('training images: {}'.format(len(dataset_train)))
     print('val images: {}'.format(len(dataset_val)))
@@ -152,19 +174,17 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    lr_now = 0
-    if parser.lr <= 0:
-        lr_now = lr_change(1, lr_now, parser.lr_map)
-    else:
+    if lr_choice == 'lr_map'
+        lr_now = lr_change_map(1, 0, parser.lr_map)
+    elif lr_choice == 'lr_fn':
+        lr_now = LR_START
+    elif lr_choice == 'lr':
         lr_now = parser.lr
 
     # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
     optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now)
-    
-    if parser.lr <= 0:
-        adjust_learning_rate(optimizer, lr_now)
 
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=PATIENCE, factor=FACTOR, verbose=True)
     loss_hist = collections.deque(maxlen=500)
@@ -238,10 +258,13 @@ def main(args=None):
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
-            if parser.lr <= 0:
-                lr_now = lr_change(epoch_num+1, lr_now, parser.lr_map)
+            if lr_choice == 'lr_map':
+                lr_now = lr_change_map(epoch_num+1, lr_now, parser.lr_map)
                 adjust_learning_rate(optimizer, lr_now)
-            else:
+            elif lr_choice == 'lr_fn':
+                lr_now = lrfn(epoch_num+1)
+                adjust_learning_rate(optimizer, lr_now)
+            elif lr_choice == 'lr':
                 scheduler.step(mean_epoch_loss)
 
             print('Evaluating dataset')
