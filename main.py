@@ -174,13 +174,13 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    if lr_choice == 'lr_map'
+    if lr_choice == 'lr_map':
         lr_now = lr_change_map(1, 0, parser.lr_map)
     elif lr_choice == 'lr_fn':
         lr_now = LR_START
     elif lr_choice == 'lr_scheduler':
         lr_now = parser.lr
-    
+
     # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
     optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
