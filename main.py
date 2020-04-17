@@ -174,11 +174,11 @@ def main(args=None):
     retinanet = torch.nn.DataParallel(retinanet).cuda()
     retinanet.training = True
 
-    if lr_choice == 'lr_map':
+    if parser.lr_choice == 'lr_map':
         lr_now = lr_change_map(1, 0, parser.lr_map)
-    elif lr_choice == 'lr_fn':
+    elif lparser.r_choice == 'lr_fn':
         lr_now = LR_START
-    elif lr_choice == 'lr_scheduler':
+    elif parser.lr_choice == 'lr_scheduler':
         lr_now = parser.lr
 
     # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
@@ -258,13 +258,13 @@ def main(args=None):
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
             epoch_loss_file.flush()
 
-            if lr_choice == 'lr_map':
+            if parser.lr_choice == 'lr_map':
                 lr_now = lr_change_map(epoch_num+1, lr_now, parser.lr_map)
                 adjust_learning_rate(optimizer, lr_now)
-            elif lr_choice == 'lr_fn':
+            elif parser.lr_choice == 'lr_fn':
                 lr_now = lrfn(epoch_num+1)
                 adjust_learning_rate(optimizer, lr_now)
-            elif lr_choice == 'lr_scheduler':
+            elif parser.lr_choice == 'lr_scheduler':
                 scheduler.step(mean_epoch_loss)
 
             print('Evaluating dataset')
