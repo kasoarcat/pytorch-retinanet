@@ -42,7 +42,7 @@ NUM_WORKERS = 2
 IMAGE_SIZE = (540, 960)
 PRETRAINED = True
 
-# LR_CHOICE = 'lr'
+# LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
 PATIENCE = 3
 FACTOR = 0.1
@@ -105,7 +105,7 @@ def main(args=None):
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
-    parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr', 'lr_map', 'lr_fn'], type=str, help='lr', 'lr_map', 'lr_fn')
+    parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr_scheduler', 'lr_map', 'lr_fn'], type=str)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
@@ -178,9 +178,9 @@ def main(args=None):
         lr_now = lr_change_map(1, 0, parser.lr_map)
     elif lr_choice == 'lr_fn':
         lr_now = LR_START
-    elif lr_choice == 'lr':
+    elif lr_choice == 'lr_scheduler':
         lr_now = parser.lr
-
+    
     # optimizer = optim.Adam(retinanet.parameters(), lr=lr_now)
     optimizer = optim.AdamW(retinanet.parameters(), lr=lr_now)
     # optimizer = optim.SGD(retinanet.parameters(), lr=lr_now, momentum=0.9, weight_decay=5e-4)
@@ -264,7 +264,7 @@ def main(args=None):
             elif lr_choice == 'lr_fn':
                 lr_now = lrfn(epoch_num+1)
                 adjust_learning_rate(optimizer, lr_now)
-            elif lr_choice == 'lr':
+            elif lr_choice == 'lr_scheduler':
                 scheduler.step(mean_epoch_loss)
 
             print('Evaluating dataset')
