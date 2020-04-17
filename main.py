@@ -144,7 +144,7 @@ def main(args=None):
         )
 
     # 混合test
-    dataset_train += dataset_val
+    # dataset_train += dataset_val
 
     print('training images: {}'.format(len(dataset_train)))
     print('val images: {}'.format(len(dataset_val)))
