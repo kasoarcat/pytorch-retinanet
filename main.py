@@ -71,7 +71,7 @@ LR_FN = {
     'LR_MIN': '1e-5',
     'LR_RAMPUP_EPOCHS': '10',
     'LR_SUSTAIN_EPOCHS': '5',
-    'LR_EXP_DECAY': '.8',
+    'LR_EXP_DECAY': '.8'
 }
 ########################################
 
