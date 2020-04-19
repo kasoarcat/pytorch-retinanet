@@ -226,13 +226,13 @@ def main(args=None):
     if os.path.isfile(epoch_loss_path):
         os.remove(epoch_loss_path)
     
-    eval_val_path = 'eval_val_result.csv'
-    if os.path.isfile(eval_val_path):
-        os.remove(eval_val_path)
-
     eval_train_path = 'eval_train_result.csv'
     if os.path.isfile(eval_train_path):
         os.remove(eval_train_path)
+
+    eval_val_path = 'eval_val_result.csv'
+    if os.path.isfile(eval_val_path):
+        os.remove(eval_val_path)
 
     USE_KAGGLE = True if os.environ.get('KAGGLE_KERNEL_RUN_TYPE', False) else False
     if USE_KAGGLE:
@@ -242,8 +242,11 @@ def main(args=None):
         eval_train_path = '/kaggle/working/' + eval_train_path
 
     print()
-    with open(epoch_loss_path, 'a+') as epoch_loss_file, open(iteration_loss_path, 'a+') as iteration_loss_file, \
-        open(eval_train_path, 'a+') as eval_train_file, open(eval_val_path, 'a+') as eval_val_file:
+    with open(epoch_loss_path, 'a+') as epoch_loss_file, \
+         open(iteration_loss_path, 'a+') as iteration_loss_file, \
+         open(eval_train_path, 'a+') as eval_train_file, \
+         open(eval_val_path, 'a+') as eval_val_file:
+
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
         eval_train_file.write('epoch_num,map50\n')
