@@ -34,27 +34,28 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ########################################
-# DEPTH = 50
-# IMAGE_SIZE = (540, 960)
-# BATCH_SIZE = 8
-
-# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-# IMAGE_SIZE = (540, 960)
-# BATCH_SIZE = 4
+DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+IMAGE_SIZE = (540, 960)
+BATCH_SIZE = 4
 
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 # IMAGE_SIZE = (675, 1200)
 # BATCH_SIZE = 4
 
-DEPTH = 50
-IMAGE_SIZE = (675, 1200)
-BATCH_SIZE = 6
+# DEPTH = 50
+# IMAGE_SIZE = (540, 960)
+# BATCH_SIZE = 8
+
+# DEPTH = 50
+# IMAGE_SIZE = (675, 1200)
+# BATCH_SIZE = 6
 
 ##########
 
 EPOCHS = 40
 NUM_WORKERS = 2
 PRETRAINED = True
+MERGE_VAL = 1
 
 # LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
@@ -69,8 +70,8 @@ LR_FN = {
     'LR_START': '1e-5',
     'LR_MAX': '1e-4',
     'LR_MIN': '1e-5',
-    'LR_RAMPUP_EPOCHS': '10',
-    'LR_SUSTAIN_EPOCHS': '5',
+    'LR_RAMPUP_EPOCHS': '5',
+    'LR_SUSTAIN_EPOCHS': '10',
     'LR_EXP_DECAY': '.8'
 }
 ########################################
@@ -124,7 +125,7 @@ def main(args=None):
     parser.add_argument('--batch_size', help='batch size', type=int, default=BATCH_SIZE)
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
-    parser.add_argument('--merge_val', help='merge_val', type=int, default=0)
+    parser.add_argument('--merge_val', help='merge_val', type=int, default=MERGE_VAL)
     parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr_scheduler', 'lr_map', 'lr_fn'], type=str)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
