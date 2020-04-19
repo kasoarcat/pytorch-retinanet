@@ -33,14 +33,27 @@ from io import StringIO
 assert torch.__version__.split('.')[0] == '1'
 
 
-####################
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+########################################
 # DEPTH = 50
+# IMAGE_SIZE = (540, 960)
+# BATCH_SIZE = 8
+
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# IMAGE_SIZE = (540, 960)
+# BATCH_SIZE = 4
+
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# IMAGE_SIZE = (675, 1200)
+# BATCH_SIZE = 4
+
+DEPTH = 50
+IMAGE_SIZE = (675, 1200)
+BATCH_SIZE = 6
+
+##########
 
 EPOCHS = 40
-BATCH_SIZE = 4
 NUM_WORKERS = 2
-IMAGE_SIZE = (540, 960)
 PRETRAINED = True
 
 # LR_CHOICE = 'lr_scheduler'
@@ -52,13 +65,15 @@ FACTOR = 0.1
 LR_MAP = {"1":"2e-4", "25":"1.5e-4", "30":"7.5e-5", "35":"3e-5"}
 
 LR_CHOICE = 'lr_fn'
-LR_START = 1e-5
-LR_MAX = 1e-4
-LR_MIN = 1e-5
-LR_RAMPUP_EPOCHS = 5
-LR_SUSTAIN_EPOCHS = 10
-LR_EXP_DECAY = .8
-####################
+LR_FN = {
+"LR_START":"1e-5",
+"LR_MAX": "1e-4",
+"LR_MIN" = "1e-5"
+"LR_RAMPUP_EPOCHS" = "10"
+"LR_SUSTAIN_EPOCHS" = "5"
+"LR_EXP_DECAY" = ".8"
+}
+########################################
 
 
 class StoreDictKeyPair(argparse.Action):
@@ -87,13 +102,16 @@ def lr_change_map(epoch, lr, lr_map):
     return new_lr
 
 
-def lrfn(epoch):
-    if epoch < LR_RAMPUP_EPOCHS:
-        lr = (LR_MAX - LR_START) / LR_RAMPUP_EPOCHS * epoch + LR_START
-    elif epoch < LR_RAMPUP_EPOCHS + LR_SUSTAIN_EPOCHS:
-        lr = LR_MAX
+def lrfn(epoch, lr_fn_dicts):
+    if epoch < lr_fn_dicts[LR_RAMPUP_EPOCHS]:
+        lr = (float(lr_fn_dicts[LR_MAX]) - float(lr_fn_dicts[LR_START])) / int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) * epoch +
+            float(lr_fn_dicts[LR_START])
+    elif epoch < int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) + int(lr_fn_dicts[LR_SUSTAIN_EPOCHS]):
+        lr = float(lr_fn_dicts[LR_MAX])
     else:
-        lr = (LR_MAX - LR_MIN) * LR_EXP_DECAY**(epoch - LR_RAMPUP_EPOCHS - LR_SUSTAIN_EPOCHS) + LR_MIN
+        lr = (float(lr_fn_dicts[LR_MAX]) - float(lr_fn_dicts[LR_MIN])) * 
+            float(lr_fn_dicts[LR_EXP_DECAY])**(epoch - int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) - int(lr_fn_dicts[LR_SUSTAIN_EPOCHS])) +
+            float(lr_fn_dicts[LR_MIN])
     return lr
 
 
@@ -110,6 +128,7 @@ def main(args=None):
     parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr_scheduler', 'lr_map', 'lr_fn'], type=str)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
+    parser.add_argument("--lr_fn", dest="lr_fn", action=StoreDictKeyPair, default=LR_FN)
     parser.add_argument('--depth', help='Resnet depth, must be one of 18, 34, 50, 101, 152', type=int, default=DEPTH)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=EPOCHS)
     parser = parser.parse_args(args)
@@ -124,6 +143,7 @@ def main(args=None):
     print('lr_choice:', parser.lr_choice)
     print('lr:', parser.lr)
     print('lr_map:', parser.lr_map)
+    print('lr_fn:', parser.lr_fn)
     print('num_classes:', parser.num_classes)
     print('limit:', parser.limit)
 
@@ -268,7 +288,7 @@ def main(args=None):
                 lr_now = lr_change_map(epoch_num+1, lr_now, parser.lr_map)
                 adjust_learning_rate(optimizer, lr_now)
             elif parser.lr_choice == 'lr_fn':
-                lr_now = lrfn(epoch_num+1)
+                lr_now = lrfn(epoch_num+1, parser.lr_fn)
                 adjust_learning_rate(optimizer, lr_now)
             elif parser.lr_choice == 'lr_scheduler':
                 scheduler.step(mean_epoch_loss)
