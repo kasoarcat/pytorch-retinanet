@@ -36,7 +36,7 @@ assert torch.__version__.split('.')[0] == '1'
 ########################################
 DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 IMAGE_SIZE = (540, 960)
-BATCH_SIZE = 4
+BATCH_SIZE = 5
 
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 # IMAGE_SIZE = (675, 1200)
@@ -226,23 +226,28 @@ def main(args=None):
     if os.path.isfile(epoch_loss_path):
         os.remove(epoch_loss_path)
     
-    eval_result_path = 'eval_result.csv'
-    if os.path.isfile(eval_result_path):
-        os.remove(eval_result_path)
+    eval_val_path = 'eval_val_result.csv'
+    if os.path.isfile(eval_val_path):
+        os.remove(eval_val_path)
+
+    eval_train_path = 'eval_train_result.csv'
+    if os.path.isfile(eval_train_path):
+        os.remove(eval_train_path)
 
     USE_KAGGLE = True if os.environ.get('KAGGLE_KERNEL_RUN_TYPE', False) else False
     if USE_KAGGLE:
         iteration_loss_path = '/kaggle/working/' + iteration_loss_path
         epoch_loss_path = '/kaggle/working/' + epoch_loss_path
-        eval_result_path = '/kaggle/working/' + eval_result_path
-    
+        eval_val_path = '/kaggle/working/' + eval_val_path
+        eval_train_path = '/kaggle/working/' + eval_train_path
+
     print()
-    with open (epoch_loss_path, 'a+') as epoch_loss_file, open (iteration_loss_path, 'a+') as iteration_loss_file, \
-        open (eval_result_path, 'a+') as coco_eval_file:
+    with open(epoch_loss_path, 'a+') as epoch_loss_file, open(iteration_loss_path, 'a+') as iteration_loss_file, \
+        open(eval_train_path, 'a+') as eval_train_file, open(eval_val_path, 'a+') as eval_val_file:
         epoch_loss_file.write('epoch_num,mean_epoch_loss\n')
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
-        coco_eval_file.write('epoch_num,map50\n')
-
+        eval_train_file.write('epoch_num,map50\n')
+        eval_val_file.write('epoch_num,map50\n')
         for epoch_num in range(parser.epochs):
             retinanet.train()
             retinanet.module.freeze_bn()
@@ -294,8 +299,12 @@ def main(args=None):
             elif parser.lr_choice == 'lr_scheduler':
                 scheduler.step(mean_epoch_loss)
 
-            print('Evaluating dataset')
-            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, coco_eval_file, epoch_num)
+            if parser.dataset != 'show':
+                print('Evaluating dataset_train')
+                coco_eval.evaluate_coco(dataset_train, retinanet, parser.dataset, eval_train_file, epoch_num)
+
+            print('Evaluating dataset_val')
+            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, eval_val_file, epoch_num)
     return parser
 
 
