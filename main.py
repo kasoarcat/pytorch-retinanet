@@ -62,16 +62,16 @@ PATIENCE = 3
 FACTOR = 0.1
 
 # LR_CHOICE = 'lr_map'
-LR_MAP = {"1":"2e-4", "25":"1.5e-4", "30":"7.5e-5", "35":"3e-5"}
+LR_MAP = {'1':'2e-4', '25':'1.5e-4', '30':'7.5e-5', '35':'3e-5'}
 
 LR_CHOICE = 'lr_fn'
 LR_FN = {
-    "LR_START": "1e-5",
-    "LR_MAX": "1e-4",
-    "LR_MIN": "1e-5",
-    "LR_RAMPUP_EPOCHS": "10",
-    "LR_SUSTAIN_EPOCHS": "5",
-    "LR_EXP_DECAY": ".8",
+    'LR_START': '1e-5',
+    'LR_MAX': '1e-4',
+    'LR_MIN': '1e-5',
+    'LR_RAMPUP_EPOCHS': '10',
+    'LR_SUSTAIN_EPOCHS': '5',
+    'LR_EXP_DECAY': '.8',
 }
 ########################################
 
@@ -103,15 +103,15 @@ def lr_change_map(epoch, lr, lr_map):
 
 
 def lrfn(epoch, lr_fn_dicts):
-    if epoch < int(lr_fn_dicts[LR_RAMPUP_EPOCHS]):
-        lr = (float(lr_fn_dicts[LR_MAX]) - float(lr_fn_dicts[LR_START])) / int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) * epoch +
-            float(lr_fn_dicts[LR_START])
-    elif epoch < int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) + int(lr_fn_dicts[LR_SUSTAIN_EPOCHS]):
-        lr = float(lr_fn_dicts[LR_MAX])
+    if epoch < int(lr_fn_dicts['LR_RAMPUP_EPOCHS']):
+        lr = (float(lr_fn_dicts['LR_MAX']) - float(lr_fn_dicts['LR_START'])) / int(lr_fn_dicts['LR_RAMPUP_EPOCHS']) * epoch + \
+            float(lr_fn_dicts['LR_START'])
+    elif epoch < int(lr_fn_dicts['LR_RAMPUP_EPOCHS']) + int(lr_fn_dicts['LR_SUSTAIN_EPOCHS']):
+        lr = float(lr_fn_dicts['LR_MAX'])
     else:
-        lr = (float(lr_fn_dicts[LR_MAX]) - float(lr_fn_dicts[LR_MIN])) * 
-            float(lr_fn_dicts[LR_EXP_DECAY])**(epoch - int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) - int(lr_fn_dicts[LR_SUSTAIN_EPOCHS])) +
-            float(lr_fn_dicts[LR_MIN])
+        lr = (float(lr_fn_dicts['LR_MAX']) - float(lr_fn_dicts['LR_MIN'])) * \
+            float(lr_fn_dicts['LR_EXP_DECAY'])**(epoch - int(lr_fn_dicts['LR_RAMPUP_EPOCHS']) - \
+            int(lr_fn_dicts['LR_SUSTAIN_EPOCHS'])) + float(lr_fn_dicts['LR_MIN'])
     return lr
 
 
