@@ -103,7 +103,7 @@ def lr_change_map(epoch, lr, lr_map):
 
 
 def lrfn(epoch, lr_fn_dicts):
-    if epoch < lr_fn_dicts[LR_RAMPUP_EPOCHS]:
+    if epoch < int(lr_fn_dicts[LR_RAMPUP_EPOCHS]):
         lr = (float(lr_fn_dicts[LR_MAX]) - float(lr_fn_dicts[LR_START])) / int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) * epoch +
             float(lr_fn_dicts[LR_START])
     elif epoch < int(lr_fn_dicts[LR_RAMPUP_EPOCHS]) + int(lr_fn_dicts[LR_SUSTAIN_EPOCHS]):
