@@ -66,12 +66,12 @@ LR_MAP = {"1":"2e-4", "25":"1.5e-4", "30":"7.5e-5", "35":"3e-5"}
 
 LR_CHOICE = 'lr_fn'
 LR_FN = {
-"LR_START": "1e-5",
-"LR_MAX": "1e-4",
-"LR_MIN": "1e-5"
-"LR_RAMPUP_EPOCHS": "10"
-"LR_SUSTAIN_EPOCHS": "5"
-"LR_EXP_DECAY": ".8"
+    "LR_START": "1e-5",
+    "LR_MAX": "1e-4",
+    "LR_MIN": "1e-5",
+    "LR_RAMPUP_EPOCHS": "10",
+    "LR_SUSTAIN_EPOCHS": "5",
+    "LR_EXP_DECAY": ".8",
 }
 ########################################
 
