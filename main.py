@@ -21,7 +21,7 @@ if platform.system() == 'Linux':
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
     install('install/pytoan-0.6.4-py3-none-any.whl')
-    install('install/imgaug-0.2.6-py3-none-any.whl')
+    # install('install/imgaug-0.2.6-py3-none-any.whl')
     install('install/albumentations-0.4.5-py3-none-any.whl')
     
 
@@ -49,13 +49,17 @@ assert torch.__version__.split('.')[0] == '1'
 
 
 ########################################
-DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
-IMAGE_SIZE = (540, 960)
-BATCH_SIZE = 5
+# DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
+# IMAGE_SIZE = (540, 960)
+# BATCH_SIZE = 5
 
 # DEPTH = 101250  # 使用resnet101模型,但載入resnet50權重
 # IMAGE_SIZE = (675, 1200)
 # BATCH_SIZE = 4
+
+DEPTH = 50
+IMAGE_SIZE = (512, 512)
+BATCH_SIZE = 10
 
 # DEPTH = 50
 # IMAGE_SIZE = (540, 960)
@@ -71,7 +75,7 @@ EPOCHS = 40
 NUM_WORKERS = 2
 PRETRAINED = True
 MERGE_VAL = 0
-DO_AUG = 0
+DO_AUG = 1
 
 # LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
