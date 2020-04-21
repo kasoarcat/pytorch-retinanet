@@ -20,9 +20,9 @@ if platform.system() == 'Linux':
     def install(package):
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
-    install('install/pytoan-0.6.4-py3-none-any.whl')
+    # install('install/pytoan-0.6.4-py3-none-any.whl')
     # install('install/imgaug-0.2.6-py3-none-any.whl')
-    install('install/albumentations-0.4.5-py3-none-any.whl')
+    # install('install/albumentations-0.4.5-py3-none-any.whl')
     
 
 import argparse
@@ -36,7 +36,8 @@ import torchvision
 from torchvision import transforms
 
 from retinanet import model
-from retinanet.dataloader import H5CoCoDataset, get_augumentation, CocoDataset, detection_collate, collater, Resizer, \
+from retinanet.augmentation import get_augumentation
+from retinanet.dataloader import H5CoCoDataset, CocoDataset, detection_collate, collater, Resizer, \
     AspectRatioBasedSampler, Augmenter, Normalizer
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 
@@ -75,7 +76,7 @@ EPOCHS = 40
 NUM_WORKERS = 2
 PRETRAINED = True
 MERGE_VAL = 0
-DO_AUG = 1
+DO_AUG = 0
 
 # LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
@@ -287,10 +288,10 @@ def main(args=None):
             for iter_num, data in enumerate(dataloader_train):
                 optimizer.zero_grad()
 
-                if parser.do_aug:
-                    classification_loss, regression_loss = retinanet([data[0].cuda().float(), data[1]])
-                else:
-                    classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
+                # if parser.do_aug:
+                #     classification_loss, regression_loss = retinanet([data[0].cuda().float(), data[1]])
+                # else:
+                classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
 
                 classification_loss = classification_loss.mean()
                 regression_loss = regression_loss.mean()
