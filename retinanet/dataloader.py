@@ -19,7 +19,8 @@ import skimage
 
 from PIL import Image
 import h5py
-
+import albumentations as albu
+from albumentations.pytorch.transforms import ToTensor
 
 class H5CoCoDataset(torch.utils.data.Dataset):
     def __init__(self, path, set_name):
@@ -64,9 +65,10 @@ class H5CoCoDataset(torch.utils.data.Dataset):
 
 
 class CocoDataset(Dataset):
-    def __init__(self, root_dir, set_name='train2017', transform=None, limit_len=0):
+    def __init__(self, root_dir, set_name='train2017', do_aug=0, transform=None, limit_len=0):
         self.root_dir = root_dir
         self.set_name = set_name
+        self.do_aug = do_aug
         self.transform = transform
         self.coco = COCO(os.path.join(self.root_dir, self.set_name, self.set_name + '.json'))
         self.image_ids = self.coco.getImgIds()
@@ -96,12 +98,24 @@ class CocoDataset(Dataset):
             self.labels[value] = key
 
     def __getitem__(self, idx):
-        img = self.load_image(idx)
-        annot = self.load_annotations(idx)
-        sample = {'img': img, 'annot': annot}
-        if self.transform:
-            sample = self.transform(sample)
-        # print('sample:', sample)
+        sample = None
+        if not self.do_aug:
+            img = self.load_image(idx)
+            annot = self.load_annotations(idx)
+            sample = {'img': img, 'annot': annot}
+            if self.transform:
+                sample = self.transform(sample)
+        else:
+            sample = {'bboxes': [], 'category_id': [], 'image': self.load_image(idx)}
+            annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[idx], iscrowd=False)
+            if len(annotations_ids) == 0:
+                print('annotations_ids == 0 idx:{} image_ids:{}'.format(idx, self.image_ids[idx]))
+            coco_annotations = self.coco.loadAnns(annotations_ids)
+            for idx, a in enumerate(coco_annotations):
+                sample['bboxes'].append(a['bbox'])
+                sample['category_id'].append(self.coco_label_to_label(a['category_id']))
+            if self.transform:
+                sample = self.transform(**sample)
         return sample
 
     def __len__(self):
@@ -248,7 +262,6 @@ class CSVDataset(Dataset):
         return len(self.image_names)
 
     def __getitem__(self, idx):
-
         img = self.load_image(idx)
         annot = self.load_annotations(idx)
         sample = {'img': img, 'annot': annot}
@@ -344,6 +357,26 @@ class CSVDataset(Dataset):
     def image_aspect_ratio(self, image_index):
         image = Image.open(self.image_names[image_index])
         return float(image.width) / float(image.height)
+
+
+def detection_collate(batch):
+    imgs = [s['image'] for s in batch]
+    annots = [s['bboxes'] for s in batch]
+    labels = [s['category_id'] for s in batch]
+    # print('imgs:', len(imgs))
+    # print('annots:', len(annots))
+    # print('labels:', len(labels))
+
+    max_num_annots = max(len(annot) for annot in annots)
+    annot_padded = np.ones((len(annots), max_num_annots, 5)) * -1
+
+    if max_num_annots > 0:
+        for idx, (annot, lab) in enumerate(zip(annots, labels)):
+            if len(annot) > 0:
+                annot_padded[idx, :len(annot), :4] = annot
+                annot_padded[idx, :len(annot), 4] = lab
+
+    return (torch.stack(imgs, 0), torch.FloatTensor(annot_padded))
 
 
 def collater(data):
@@ -514,3 +547,41 @@ class AspectRatioBasedSampler(RandomSampler):
 
         # divide into groups, one group = one batch
         return [[order[x % len(order)] for x in range(i, i + self.batch_size)] for i in range(0, len(order), self.batch_size)]
+
+
+def get_augumentation(phase, width=512, height=512, min_area=0., min_visibility=0.):
+    list_transforms = []
+    if phase == 'train':
+        list_transforms.extend([
+            albu.augmentations.transforms.LongestMaxSize(max_size=width, always_apply=True),
+            albu.PadIfNeeded(min_height=height, min_width=width, always_apply=True, border_mode=0, value=[0, 0, 0]),
+            albu.augmentations.transforms.RandomResizedCrop(height=height, width=width, p=0.3),
+            albu.augmentations.transforms.Flip(),
+            albu.augmentations.transforms.Transpose(),
+            albu.OneOf([
+                albu.RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.4),
+                albu.RandomGamma(gamma_limit=(50, 150)),
+                albu.NoOp()
+            ]),
+            albu.OneOf([
+                albu.RGBShift(r_shift_limit=20, b_shift_limit=15, g_shift_limit=15),
+                albu.HueSaturationValue(hue_shift_limit=5, sat_shift_limit=5),
+                albu.NoOp()
+            ]),
+            # albu.CLAHE(p=0.8),
+            albu.HorizontalFlip(p=0.5),
+            albu.VerticalFlip(p=0.5),
+        ])
+    if(phase == 'test' or phase == 'valid'):
+        list_transforms.extend([
+            albu.Resize(height=height, width=width)
+        ])
+    list_transforms.extend([
+        albu.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+        ToTensor()
+    ])
+    if(phase == 'test'):
+        return albu.Compose(list_transforms)
+    return albu.Compose(list_transforms, bbox_params=albu.BboxParams(format='coco', min_area=min_area,
+                                                                     min_visibility=min_visibility, 
+                                                                     label_fields=['category_id']))

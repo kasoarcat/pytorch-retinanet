@@ -1,3 +1,14 @@
+# import inspect
+
+# __print__ = print
+
+# def print(*args):
+#     callerframerecord = inspect.stack()[1]
+#     frame = callerframerecord[0]
+#     info = inspect.getframeinfo(frame)
+#     __print__(args, info.filename, info.function, info.lineno)
+
+
 import os
 import platform
 
@@ -9,6 +20,9 @@ if platform.system() == 'Linux':
     def install(package):
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     install('install/pycocotools-2.0-cp36-cp36m-linux_x86_64.whl')
+    install('install/pytoan-0.6.4-py3-none-any.whl')
+    install('install/imgaug-0.2.6-py3-none-any.whl')
+    install('install/albumentations-0.4.5-py3-none-any.whl')
     
 
 import argparse
@@ -22,7 +36,8 @@ import torchvision
 from torchvision import transforms
 
 from retinanet import model
-from retinanet.dataloader import H5CoCoDataset, CocoDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, Normalizer
+from retinanet.dataloader import H5CoCoDataset, get_augumentation, CocoDataset, detection_collate, collater, Resizer, \
+    AspectRatioBasedSampler, Augmenter, Normalizer
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 
 from retinanet import coco_eval
@@ -55,7 +70,8 @@ BATCH_SIZE = 5
 EPOCHS = 40
 NUM_WORKERS = 2
 PRETRAINED = True
-MERGE_VAL = 1
+MERGE_VAL = 0
+DO_AUG = 0
 
 # LR_CHOICE = 'lr_scheduler'
 LR = 1e-4
@@ -70,8 +86,8 @@ LR_FN = {
     'LR_START': '1e-5',
     'LR_MAX': '1e-4',
     'LR_MIN': '1e-5',
-    'LR_RAMPUP_EPOCHS': '5',
-    'LR_SUSTAIN_EPOCHS': '10',
+    'LR_RAMPUP_EPOCHS': '10',
+    'LR_SUSTAIN_EPOCHS': '5',
     'LR_EXP_DECAY': '.8'
 }
 ########################################
@@ -126,6 +142,7 @@ def main(args=None):
     parser.add_argument('--num_works', help='num works', type=int, default=NUM_WORKERS)
     parser.add_argument('--num_classes', help='num classes', type=int, default=3)
     parser.add_argument('--merge_val', help='merge_val', type=int, default=MERGE_VAL)
+    parser.add_argument('--do_aug', help='do_aug', type=int, default=DO_AUG)
     parser.add_argument('--lr_choice', default=LR_CHOICE, choices=['lr_scheduler', 'lr_map', 'lr_fn'], type=str)
     parser.add_argument('--lr', help='lr', type=float, default=LR)
     parser.add_argument("--lr_map", dest="lr_map", action=StoreDictKeyPair, default=LR_MAP)
@@ -141,6 +158,7 @@ def main(args=None):
     print('batch_size:', parser.batch_size)
     print('num_works:', parser.num_works)
     print('merge_val:', parser.merge_val)
+    print('do_aug:', parser.do_aug)
     print('lr_choice:', parser.lr_choice)
     print('lr:', parser.lr)
     print('lr_map:', parser.lr_map)
@@ -152,19 +170,26 @@ def main(args=None):
     # dataset_train, _ = torch.utils.data.random_split(dataset_train, [NUM_COCO_DATASET_TRAIN, len(dataset_train) - NUM_COCO_DATASET_TRAIN])
     # dataset_val, _ = torch.utils.data.random_split(dataset_val, [NUM_COCO_DATASET_VAL, len(dataset_val) - NUM_COCO_DATASET_VAL])
 
+    transform_train = None
+    transform_vail = None
+    collate_fn = None
+    if parser.do_aug:
+        transform_train = get_augumentation('train', parser.image_size[0], parser.image_size[1])
+        transform_vail = get_augumentation('test', parser.image_size[0], parser.image_size[1])
+        collate_fn = detection_collate
+    else:
+        transform_train = transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)])
+        transform_vail = transforms.Compose([Normalizer(), Resizer(*parser.image_size)])
+        collate_fn = collater
+
     if parser.dataset == 'h5':
         dataset_train = H5CoCoDataset('{}/train_small.hdf5'.format(parser.coco_path), 'train_small')
         dataset_val = H5CoCoDataset('{}/test.hdf5'.format(parser.coco_path), 'test')
     else:
-        dataset_train = CocoDataset(parser.coco_path, set_name='train_small',
-                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)]),
-                                limit_len=parser.limit[0]
-                                # transform=get_augumentation('train', parser.image_size[0], parser.image_size[1])
-        )
-        dataset_val = CocoDataset(parser.coco_path, set_name='test',
-                              transform=transforms.Compose([Normalizer(), Resizer(*parser.image_size)]),
-                              limit_len=parser.limit[1]
-        )
+        dataset_train = CocoDataset(parser.coco_path, set_name='train_small', do_aug=parser.do_aug,
+            transform=transform_train, limit_len=parser.limit[0])
+        dataset_val = CocoDataset(parser.coco_path, set_name='test', do_aug=parser.do_aug,
+            transform=transform_vail, limit_len=parser.limit[1])
 
     # 混合val
     if parser.merge_val:
@@ -177,8 +202,8 @@ def main(args=None):
     print('steps_pre_epoch:', steps_pre_epoch)
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=parser.batch_size, drop_last=False)
-    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False, collate_fn=collater,
-        batch_sampler=sampler)
+    dataloader_train = DataLoader(dataset_train, batch_size=1, num_workers=parser.num_works, shuffle=False,
+        collate_fn=collate_fn, batch_sampler=sampler)
 
     # Create the model
     if parser.depth == 18:
@@ -241,7 +266,6 @@ def main(args=None):
         eval_val_path = '/kaggle/working/' + eval_val_path
         eval_train_path = '/kaggle/working/' + eval_train_path
 
-    print()
     with open(epoch_loss_path, 'a+') as epoch_loss_file, \
          open(iteration_loss_path, 'a+') as iteration_loss_file, \
          open(eval_train_path, 'a+') as eval_train_file, \
@@ -257,37 +281,37 @@ def main(args=None):
 
             epoch_loss = []
             for iter_num, data in enumerate(dataloader_train):
-                try:
-                    optimizer.zero_grad()
+                optimizer.zero_grad()
 
+                if parser.do_aug:
+                    classification_loss, regression_loss = retinanet([data[0].cuda().float(), data[1]])
+                else:
                     classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
-                    classification_loss = classification_loss.mean()
-                    regression_loss = regression_loss.mean()
-                    loss = classification_loss + regression_loss
 
-                    if bool(loss == 0):
-                        continue
+                classification_loss = classification_loss.mean()
+                regression_loss = regression_loss.mean()
+                loss = classification_loss + regression_loss
 
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(retinanet.parameters(), 0.1)
-                    optimizer.step()
-                    loss_hist.append(float(loss))
-                    epoch_loss.append(float(loss))
-
-                    iteration_loss = np.mean(loss_hist)
-                    print('\rEpoch: {} | Iteration: {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | Running loss: {:1.5f}'.format(
-                          epoch_num+1, iter_num+1, float(classification_loss), float(regression_loss), iteration_loss), end=' ' * 50)
-
-                    iteration_loss_file.write('{},{},{:1.5f},{:1.5f},{:1.5f}\n'.format(epoch_num+1,
-                        epoch_num * steps_pre_epoch + (iter_num+1), float(classification_loss), float(regression_loss),
-                        iteration_loss))
-                    iteration_loss_file.flush()
-
-                    del classification_loss
-                    del regression_loss
-                except Exception as e:
-                    print(e)
+                if bool(loss == 0):
                     continue
+
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(retinanet.parameters(), 0.1)
+                optimizer.step()
+                loss_hist.append(float(loss))
+                epoch_loss.append(float(loss))
+
+                iteration_loss = np.mean(loss_hist)
+                print('\rEpoch: {} | Iteration: {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | Running loss: {:1.5f}'.format(
+                      epoch_num+1, iter_num+1, float(classification_loss), float(regression_loss), iteration_loss), end=' ' * 50)
+
+                iteration_loss_file.write('{},{},{:1.5f},{:1.5f},{:1.5f}\n'.format(epoch_num+1,
+                    epoch_num * steps_pre_epoch + (iter_num+1), float(classification_loss), float(regression_loss),
+                    iteration_loss))
+                iteration_loss_file.flush()
+
+                del classification_loss
+                del regression_loss
 
             mean_epoch_loss = np.mean(epoch_loss)
             epoch_loss_file.write('{},{:1.5f}\n'.format(epoch_num+1, mean_epoch_loss))
@@ -304,10 +328,10 @@ def main(args=None):
 
             if parser.dataset != 'show':
                 print('Evaluating dataset_train')
-                coco_eval.evaluate_coco(dataset_train, retinanet, parser.dataset, eval_train_file, epoch_num)
+                coco_eval.evaluate_coco(dataset_train, retinanet, parser.dataset, parser.do_aug, eval_train_file, epoch_num)
 
             print('Evaluating dataset_val')
-            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, eval_val_file, epoch_num)
+            coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, parser.do_aug, eval_val_file, epoch_num)
     return parser
 
 

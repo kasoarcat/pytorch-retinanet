@@ -4,7 +4,7 @@ import json
 import torch
 from torch.utils.data import Subset
 
-def evaluate_coco(dataset, model, _type, eval_file, epoch_num, threshold=0.05):
+def evaluate_coco(dataset, model, _type, do_aug, eval_file, epoch_num, threshold=0.05):
     model.eval()
 
     with torch.no_grad():
@@ -14,24 +14,32 @@ def evaluate_coco(dataset, model, _type, eval_file, epoch_num, threshold=0.05):
 
         for index in range(len(dataset)):
             data = dataset[index]
-            scale = data['scale']
+
+            if not do_aug:
+                scale = data['scale']
 
             # run network
-            scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            if do_aug:
+                scores, labels, boxes = model(data['image'].cuda().float().unsqueeze(dim=0))
+            else:
+                scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            
             scores = scores.cpu()
             labels = labels.cpu()
             boxes  = boxes.cpu()
 
             # correct boxes for image scale
-            boxes /= scale
+            if not do_aug:
+                boxes /= scale
 
             if boxes.shape[0] > 0:
-                # change to (x, y, w, h) (MS COCO standard)
-                boxes[:, 2] -= boxes[:, 0]
-                boxes[:, 3] -= boxes[:, 1]
+                if not do_aug:
+                    # change to (x, y, w, h) (MS COCO standard)
+                    boxes[:, 2] -= boxes[:, 0]
+                    boxes[:, 3] -= boxes[:, 1]
 
                 # compute predicted labels and scores
-                #for box, score, label in zip(boxes[0], scores[0], labels[0]):
+                # for box, score, label in zip(boxes[0], scores[0], labels[0]):
                 for box_id in range(boxes.shape[0]):
                     score = float(scores[box_id])
                     label = int(labels[box_id])
@@ -69,6 +77,7 @@ def evaluate_coco(dataset, model, _type, eval_file, epoch_num, threshold=0.05):
             print('{}/{}'.format(index, len(dataset)), end='\r')
 
         if not len(results):
+            print('no result')
             return
 
         # write output
@@ -76,7 +85,7 @@ def evaluate_coco(dataset, model, _type, eval_file, epoch_num, threshold=0.05):
             name = dataset.dataset.set_name
         else:
             name = dataset.set_name
-
+        
         JSON_PATH = '{}_bbox_results.json'.format(name)
         USE_KAGGLE = True if os.environ.get('KAGGLE_KERNEL_RUN_TYPE', False) else False
         if USE_KAGGLE:
