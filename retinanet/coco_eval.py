@@ -20,7 +20,7 @@ def evaluate_coco(dataset, model, _type, do_aug, eval_file, epoch_num, threshold
 
             # run network
             if do_aug:
-                scores, labels, boxes = model(data['image'].cuda().float().unsqueeze(dim=0))
+                scores, labels, boxes = model(torch.FloatTensor(data['image']).permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
             else:
                 scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
             
@@ -33,10 +33,9 @@ def evaluate_coco(dataset, model, _type, do_aug, eval_file, epoch_num, threshold
                 boxes /= scale
 
             if boxes.shape[0] > 0:
-                if not do_aug:
-                    # change to (x, y, w, h) (MS COCO standard)
-                    boxes[:, 2] -= boxes[:, 0]
-                    boxes[:, 3] -= boxes[:, 1]
+                # change to (x, y, w, h) (MS COCO standard)
+                boxes[:, 2] -= boxes[:, 0]
+                boxes[:, 3] -= boxes[:, 1]
 
                 # compute predicted labels and scores
                 # for box, score, label in zip(boxes[0], scores[0], labels[0]):

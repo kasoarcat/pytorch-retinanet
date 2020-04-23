@@ -183,8 +183,13 @@ def main(args=None):
         transform_vail = get_augumentation('test', parser.image_size[0], parser.image_size[1])
         collate_fn = detection_collate
     else:
-        transform_train = transforms.Compose([Normalizer(), Augmenter(), Resizer(*parser.image_size)])
-        transform_vail = transforms.Compose([Normalizer(), Resizer(*parser.image_size)])
+        transform_train = transforms.Compose([
+            # Normalizer(),
+            # Augmenter(),
+            Resizer(*parser.image_size)])
+        transform_vail = transforms.Compose([
+            # Normalizer(), 
+            Resizer(*parser.image_size)])
         collate_fn = collater
 
     if parser.dataset == 'h5':
@@ -280,6 +285,7 @@ def main(args=None):
         iteration_loss_file.write('epoch_num,iteration,classification_loss,regression_loss,iteration_loss\n')
         eval_train_file.write('epoch_num,map50\n')
         eval_val_file.write('epoch_num,map50\n')
+
         for epoch_num in range(parser.epochs):
             retinanet.train()
             retinanet.module.freeze_bn()
@@ -287,10 +293,6 @@ def main(args=None):
             epoch_loss = []
             for iter_num, data in enumerate(dataloader_train):
                 optimizer.zero_grad()
-
-                # if parser.do_aug:
-                #     classification_loss, regression_loss = retinanet([data[0].cuda().float(), data[1]])
-                # else:
                 classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
 
                 classification_loss = classification_loss.mean()
@@ -331,9 +333,9 @@ def main(args=None):
             elif parser.lr_choice == 'lr_scheduler':
                 scheduler.step(mean_epoch_loss)
 
-            if parser.dataset != 'show':
-                print('Evaluating dataset_train')
-                coco_eval.evaluate_coco(dataset_train, retinanet, parser.dataset, parser.do_aug, eval_train_file, epoch_num)
+            # if parser.dataset != 'show':
+            #     print('Evaluating dataset_train')
+            #     coco_eval.evaluate_coco(dataset_train, retinanet, parser.dataset, parser.do_aug, eval_train_file, epoch_num)
 
             print('Evaluating dataset_val')
             coco_eval.evaluate_coco(dataset_val, retinanet, parser.dataset, parser.do_aug, eval_val_file, epoch_num)

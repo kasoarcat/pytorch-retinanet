@@ -97,9 +97,11 @@ class CocoDataset(Dataset):
             self.labels[value] = key
 
     def __getitem__(self, idx):
+        # print('idx:', idx)
         sample = None
         if not self.do_aug:
             img = self.load_image(idx)
+            # print('img:', img.shape)
             annot = self.load_annotations(idx)
             sample = {'img': img, 'annot': annot}
             if self.transform:
@@ -108,14 +110,27 @@ class CocoDataset(Dataset):
             sample = {'bboxes': [], 'category_id': [], 'image': self.load_image(idx)}
             annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[idx], iscrowd=False)
             if len(annotations_ids) == 0:
-                print('annotations_ids == 0 idx:{} image_ids:{}'.format(idx, self.image_ids[idx]))
+                # print('annotations_ids == 0 idx:{} image_ids:{}'.format(idx, self.image_ids[idx]))
+                pass
+                # sample['bboxes'] = np.zeros((0, 4))
+                # sample['category_id'] = np.zeros((0, 1))
+            else:
+                coco_annotations = self.coco.loadAnns(annotations_ids)
+                for idx, a in enumerate(coco_annotations):
+                    sample['bboxes'].append(a['bbox'])
+                    sample['category_id'].append(self.coco_label_to_label(a['category_id']))
 
-            coco_annotations = self.coco.loadAnns(annotations_ids)
-            for idx, a in enumerate(coco_annotations):
-                sample['bboxes'].append(a['bbox'])
-                sample['category_id'].append(self.coco_label_to_label(a['category_id']))
             if self.transform:
                 sample = self.transform(**sample)
+            
+            # transform from [x, y, w, h] to [x1, y1, x2, y2]
+            sample['bboxes'] = [list(i) for i in sample["bboxes"]]
+            sample['bboxes'] = np.array(sample['bboxes'])
+            if len(sample['bboxes']) > 0:
+                sample['bboxes'][:, 2] = sample['bboxes'][:, 0] + sample['bboxes'][:, 2]
+                sample['bboxes'][:, 3] = sample['bboxes'][:, 1] + sample['bboxes'][:, 3]
+            # print('bbox:', sample['bboxes'])
+
         return sample
 
     def __len__(self):
@@ -139,10 +154,10 @@ class CocoDataset(Dataset):
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = os.path.join(self.root_dir, self.set_name, 'images', image_info['file_name'])
-        img = cv2.imread(path)
+        img = skimage.io.imread(path)
         if len(img.shape) == 2:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        # img = img.astype(np.float32) / 255.0
+            img = skimage.color.gray2rgb(img)
+        img = img.astype(np.float32) / 255.0
         return img
 
     def load_annotations(self, image_index):
@@ -157,7 +172,6 @@ class CocoDataset(Dataset):
         # parse annotations
         coco_annotations = self.coco.loadAnns(annotations_ids)
         for idx, a in enumerate(coco_annotations):
-
             # some annotations have basically no width / height, skip them
             if a['bbox'][2] < 1 or a['bbox'][3] < 1:
                 continue
@@ -188,21 +202,41 @@ def detection_collate(batch):
     imgs = [s['image'] for s in batch]
     annots = [s['bboxes'] for s in batch]
     labels = [s['category_id'] for s in batch]
-    # print('imgs:', len(imgs))
-    # print('annots:', len(annots))
-    # print('labels:', len(labels))
+    # # print('imgs:', len(imgs))
+    # # print('annots:', len(annots))
+    # # print('labels:', len(labels))
+
+    widths = [int(s.shape[0]) for s in imgs]
+    heights = [int(s.shape[1]) for s in imgs]
+    batch_size = len(imgs)
+
+    max_width = np.array(widths).max()
+    max_height = np.array(heights).max()
+
+    padded_imgs = torch.zeros(batch_size, max_width, max_height, 3)
+    for i in range(batch_size):
+        img = imgs[i]
+        padded_imgs[i, :int(img.shape[0]), :int(img.shape[1]), :] = torch.FloatTensor(img)
+
+    # max_num_annots = max(len(annot) for annot in annots)
+    # annot_padded = np.ones((len(annots), max_num_annots, 5)) * -1
+    # if max_num_annots > 0:
+    #     for idx, (annot, lab) in enumerate(zip(annots, labels)):
+    #         if len(annot) > 0:
+    #             annot_padded[idx, :len(annot), :4] = annot
+    #             annot_padded[idx, :len(annot), 4] = lab
+    # return {'img': padded_imgs, 'annot': torch.FloatTensor(annot_padded)}
 
     max_num_annots = max(len(annot) for annot in annots)
     annot_padded = np.ones((len(annots), max_num_annots, 5)) * -1
-
     if max_num_annots > 0:
         for idx, (annot, lab) in enumerate(zip(annots, labels)):
             if len(annot) > 0:
                 annot_padded[idx, :len(annot), :4] = annot
                 annot_padded[idx, :len(annot), 4] = lab
     
-    # print('imgs[0].shape:', imgs[0].shape)
-    return {'img': torch.stack(imgs, 0), 'annot': torch.FloatTensor(annot_padded)}
+    padded_imgs = padded_imgs.permute(0, 3, 1, 2)
+    return {'img': padded_imgs, 'annot': torch.FloatTensor(annot_padded)}
 
 
 def collater(data):
@@ -218,22 +252,20 @@ def collater(data):
     max_height = np.array(heights).max()
 
     padded_imgs = torch.zeros(batch_size, max_width, max_height, 3)
-
     for i in range(batch_size):
         img = imgs[i]
         padded_imgs[i, :int(img.shape[0]), :int(img.shape[1]), :] = img
 
     max_num_annots = max(annot.shape[0] for annot in annots)
-
     if max_num_annots > 0:
         annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
         if max_num_annots > 0:
             for idx, annot in enumerate(annots):
-                #print(annot.shape)
                 if annot.shape[0] > 0:
                     annot_padded[idx, :annot.shape[0], :] = annot
     else:
         annot_padded = torch.ones((len(annots), 1, 5)) * -1
+
     padded_imgs = padded_imgs.permute(0, 3, 1, 2)
     return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}
 
@@ -245,6 +277,7 @@ class Resizer(object):
 
     """Convert ndarrays in sample to Tensors."""
     def __call__(self, sample):
+        # print('Resizer __call__')
         image, annots = sample['img'], sample['annot']
         rows, cols, cns = image.shape
         smallest_side = min(rows, cols)
@@ -277,6 +310,7 @@ class Resizer(object):
 class Augmenter(object):
     """Convert ndarrays in sample to Tensors."""
     def __call__(self, sample, flip_x=0.5):
+        # print('Augmenter __call__')
         if np.random.rand() < flip_x:
             image, annots = sample['img'], sample['annot']
             image = image[:, ::-1, :]
@@ -292,7 +326,6 @@ class Augmenter(object):
             annots[:, 2] = cols - x_tmp
 
             sample = {'img': image, 'annot': annots}
-
         return sample
 
 
@@ -302,6 +335,7 @@ class Normalizer(object):
         self.std = np.array([[[0.229, 0.224, 0.225]]])
 
     def __call__(self, sample):
+        # print('Normalizer __init__')
         image, annots = sample['img'], sample['annot']
         return {'img':((image.astype(np.float32)-self.mean)/self.std), 'annot': annots}
 
@@ -329,7 +363,7 @@ class UnNormalizer(object):
         return tensor
 
 
-class AspectRatioBasedSampler(RandomSampler):
+class AspectRatioBasedSampler(Sampler):
     def __init__(self, data_sources, batch_size, drop_last):
         self.data_sources = data_sources
         self.batch_size = batch_size
